@@ -1,27 +1,53 @@
 // Sensorik WS15 - HAW-Luftschiff
 // Team 11: Beyerstedt, Schmid, Friedrich
 
+#include <L3G.h>
+#include <LSM303.h>
+#include <Wire.h>
+
+// --- PINS ---
+#define US_TRIG   8  // an HC-SR04 Trig
+#define US_ECHO   7  // an HC-SR04 Echo
+
+#define IR1_VAL   A0
+#define IR2_VAL   A1
+
+#define MOTS_EN   12
+#define MOT1_A    5
+#define MOT1_B    6
+#define MOT2_A    9
+#define MOT2_B    10
+#define MOT3_A    11
+#define MOT3_B    13
+
+#define IMU_SCL   2
+#define IMU_SDA   3
+#define STATUS_LED 4 
 
 //--- IMU-KRAM ---
+
+/*For debugging purposes*/
+//OUTPUTMODE=1 will print the corrected data, 
+//OUTPUTMODE=0 will print uncorrected data of the gyros (with drift)
+#define OUTPUTMODE 1
+
+//#define PRINT_DCM 0     //Will print the whole direction cosine matrix
+#define PRINT_ANALOGS 0 //Will print the analog raw data
+#define PRINT_EULER 1   //Will print the Euler angles Roll, Pitch and Yaw
+
 // Uncomment the below line to use this axis definition: 
-// X axis pointing forward
-// Y axis pointing to the right 
-// and Z axis pointing down.
+// X axis pointing forward, Y axis right, Z down.
 // Positive pitch : nose up
 // Positive roll : right wing down
 // Positive yaw : clockwise
-int SENSOR_SIGN[9] = {
-  1,1,1,-1,-1,-1,1,1,1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+int SENSOR_SIGN[9] = {1,1,1,-1,-1,-1,1,1,1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+
 // Uncomment the below line to use this axis definition: 
-// X axis pointing forward
-// Y axis pointing to the left 
-// and Z axis pointing up.
+// X axis pointing forward, Y axis left, Z up.
 // Positive pitch : nose down
 // Positive roll : right wing down
 // Positive yaw : counterclockwise
 //int SENSOR_SIGN[9] = {1,-1,-1,-1,1,1,1,-1,-1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
-
-#include <Wire.h>
 
 // LSM303 accelerometer: 8 g sensitivity
 // 3.9 mg/digit; 1 g = 256
@@ -53,23 +79,13 @@ int SENSOR_SIGN[9] = {
 #define Kp_YAW 1.2
 #define Ki_YAW 0.00002
 
-/*For debugging purposes*/
-//OUTPUTMODE=1 will print the corrected data, 
-//OUTPUTMODE=0 will print uncorrected data of the gyros (with drift)
-#define OUTPUTMODE 1
-
-//#define PRINT_DCM 0     //Will print the whole direction cosine matrix
-#define PRINT_ANALOGS 0 //Will print the analog raw data
-#define PRINT_EULER 1   //Will print the Euler angles Roll, Pitch and Yaw
-
 float G_Dt=0.02;    // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
 
 long timer=0;   //general purpuse timer
 long timer_old;
 long timer24=0; //Second timer used to print values 
 int AN[6]; //array that stores the gyro and accelerometer data
-int AN_OFFSET[6]={
-  0,0,0,0,0,0}; //Array that stores the Offset of the sensors
+int AN_OFFSET[6]={0,0,0,0,0,0}; //Array that stores the Offset of the sensors
 
 int gyro_x;
 int gyro_y;
@@ -85,18 +101,12 @@ float c_magnetom_y;
 float c_magnetom_z;
 float MAG_Heading;
 
-float Accel_Vector[3]= {
-  0,0,0}; //Store the acceleration in a vector
-float Gyro_Vector[3]= {
-  0,0,0};//Store the gyros turn rate in a vector
-float Omega_Vector[3]= {
-  0,0,0}; //Corrected Gyro_Vector data
-float Omega_P[3]= {
-  0,0,0};//Omega Proportional correction
-float Omega_I[3]= {
-  0,0,0};//Omega Integrator
-float Omega[3]= {
-  0,0,0};
+float Accel_Vector[3]= {0,0,0}; //Store the acceleration in a vector
+float Gyro_Vector[3]= {0,0,0};//Store the gyros turn rate in a vector
+float Omega_Vector[3]= {0,0,0}; //Corrected Gyro_Vector data
+float Omega_P[3]= {0,0,0};//Omega Proportional correction
+float Omega_I[3]= {0,0,0};//Omega Integrator
+float Omega[3]= {0,0,0};
 
 // Euler angles
 float roll;
@@ -111,54 +121,19 @@ float errorYaw[3]= {
 unsigned int counter=0;
 byte gyro_sat=0;
 
-float DCM_Matrix[3][3]= {
-  {
-    1,0,0    }
-  ,{
-    0,1,0    }
-  ,{
-    0,0,1    }
-}; 
-float Update_Matrix[3][3]={
-  {
-    0,1,2  }
-  ,{
-    3,4,5  }
-  ,{
-    6,7,8  }
-}; //Gyros here
+float DCM_Matrix[3][3]= {{1,0,0}
+                        ,{0,1,0}
+                        ,{0,0,1}};
+  
+float Update_Matrix[3][3]={{0,1,2}
+                          ,{3,4,5}
+                          ,{6,7,8}}; //Gyros here
 
-float Temporary_Matrix[3][3]={
-  {
-    0,0,0    }
-  ,{
-    0,0,0    }
-  ,{
-    0,0,0    }
-};
+float Temporary_Matrix[3][3]={{0,0,0}
+                             ,{0,0,0}
+                             ,{0,0,0}};
 
-// --- PINS ---
-#define US_TRIG   8  // an HC-SR04 Trig
-#define US_ECHO   7  // an HC-SR04 Echo
-
-#define IR1_VAL   A0
-#define IR2_VAL   A1
-
-#define MOTS_EN   12
-#define MOT1_A    5
-#define MOT1_B    6
-#define MOT2_A    9
-#define MOT2_B    10
-#define MOT3_A    11
-#define MOT3_B    13
-
-#define IMU_SCL   2
-#define IMU_SDA   3
-#define STATUS_LED 4 
-
-
-enum Status {
-  START=1, GERADEAUS, TREPPE, BARRIKADE, LANDUNG};
+enum Status {START=1, GERADEAUS, TREPPE, BARRIKADE, LANDUNG};
 static enum Status S = START;
 
 // --- OPTIONEN ---
@@ -167,6 +142,8 @@ static enum Status S = START;
 // --- VARIABLEN ---
 long duration=0;
 long distance=0;
+
+#include "IMU.h"
 
 void setup(){
   pinMode(MOT1_A, OUTPUT); 
@@ -196,7 +173,7 @@ void setup(){
 
   delay(20);
 
-  for(int i=0;i<32;i++)    // We take some readings...
+  for(int i=0 ; i<32 ; i++)    // We take some readings...
   {
     Read_Gyro();
     Read_Accel();
@@ -227,9 +204,43 @@ void Hoehenregelung(){
 
 }
 
+void IMU_Zeug(){
+if((millis()-timer)>=20)  // IMU runs at 50Hz
+  {
+    counter++;
+    timer_old = timer;
+    timer=millis();
+    if (timer>timer_old)
+      G_Dt = (timer-timer_old)/1000.0;    // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
+    else
+      G_Dt = 0;
+    
+    // *** DCM algorithm
+    // Data adquisition
+    Read_Gyro();   // This read gyro data
+    Read_Accel();     // Read I2C accelerometer
+    
+    if (counter > 5)  // Read compass data at 10Hz... (5 loop runs)
+      {
+      counter=0;
+      Read_Compass();    // Read I2C magnetometer
+      Compass_Heading(); // Calculate magnetic heading  
+      }
+    
+    // Calculations...
+    Matrix_update(); 
+    Normalize();
+    Drift_correction();
+    Euler_angles();
+    // ***
+   
+    printdata();
+  }
+}
 
 void loop(){
 
+  IMU_Zeug();
   Hoehenregelung();
 
   switch(S) {
