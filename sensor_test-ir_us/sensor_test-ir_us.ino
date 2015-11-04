@@ -75,8 +75,11 @@ void loop() {
   distance = duration / 29.1;
 
   Serial.print("US "); Serial.print(distance);
+  if (distance >= 200 || distance <= 0){
+    Serial.print("\t Out of range");
+  }
 
-  delay(20);
+  delay(100);
 
 
   /*
