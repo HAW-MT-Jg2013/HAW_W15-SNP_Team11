@@ -122,7 +122,7 @@ void Matrix_update(void)
 
   //Accel_adjust();    //Remove centrifugal acceleration.   We are not using this function in this version - we have no speed measurement
   
- #if OUTPUTMODE==1         
+ #ifdef OUTPUTMODE_C         
   Update_Matrix[0][0]=0;
   Update_Matrix[0][1]=-G_Dt*Omega_Vector[2];//-z
   Update_Matrix[0][2]=G_Dt*Omega_Vector[1];//y

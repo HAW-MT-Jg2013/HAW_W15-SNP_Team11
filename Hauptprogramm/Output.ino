@@ -3,7 +3,7 @@ void printdata(void)
 {    
       Serial.print("!");
 
-      #if PRINT_EULER == 1
+      #ifdef PRINT_EULER
       Serial.print("ANG:");
       Serial.print(ToDeg(roll));
       Serial.print(",");
@@ -11,7 +11,7 @@ void printdata(void)
       Serial.print(",");
       Serial.print(ToDeg(yaw));
       #endif      
-      #if PRINT_ANALOGS == 1
+      #ifdef PRINT_ANALOGS
       Serial.print(",AN:");
       Serial.print(AN[0]);  //(int)read_adc(0)
       Serial.print(",");
