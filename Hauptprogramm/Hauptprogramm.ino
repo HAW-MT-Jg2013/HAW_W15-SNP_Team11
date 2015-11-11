@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include "sharp.h"
 
+
 // --- PINS ---
 #define US_TRIG   8  // an HC-SR04 Trig
 #define US_ECHO   7  // an HC-SR04 Echo
@@ -23,51 +24,57 @@
 
 #define IMU_SCL   2
 #define IMU_SDA   3
-#define STATUS_LED 4 
+#define STATUS_LED 4
 
-//--- IMU-KRAM ---
 
+//--- OPTIONEN ---
+
+// IMU
 #define OUTPUTMODE_C  //for corrected data, comment for uncorrectet data of gyro (with drift)
 
 //#define PRINT_DCM      //Will print the whole direction cosine matrix
 //#define PRINT_ANALOGS  //Will print the analog raw data
 //#define PRINT_EULER    //Will print the Euler angles Roll, Pitch and Yaw
 
-// --- OPTIONEN ---
+// Allgemein
 //#define DEBUG_IR
 #define DEBUG_IMU
 
-// --- VARIABLEN ---
-unsigned long duration=0;
-long distance=0;
-unsigned int ir_distance=0;
-unsigned int ir2_distance=0;
+#include "IMU_lib.h"
+
+
+// --- GLOBALE VARIABLEN ---
+unsigned int us_distance = 0;
+unsigned int ir1_distance = 0;
+unsigned int ir2_distance = 0;
 
 Sharp IR_1 = Sharp(IR1_VAL);
 Sharp IR_2 = Sharp(IR2_VAL);
 
-#include "IMU.h"
+enum Status {START = 1, GERADEAUS, TREPPE, BARRIKADE, LANDUNG};
+static enum Status S = START;
 
-void setup(){
-  pinMode(MOT1_A, OUTPUT); 
-  pinMode(MOT1_B, OUTPUT); 
-  pinMode(MOT2_A, OUTPUT); 
-  pinMode(MOT2_B, OUTPUT); 
-  pinMode(MOT3_A, OUTPUT); 
-  pinMode(MOT3_B, OUTPUT); 
-  pinMode(MOTS_EN, OUTPUT); 
-  pinMode(US_TRIG, OUTPUT); 
-  pinMode(US_ECHO, INPUT); 
-  pinMode(IR1_VAL, INPUT); 
-  pinMode(IR2_VAL, INPUT); 
+
+void setup() {
+  pinMode(MOT1_A, OUTPUT);
+  pinMode(MOT1_B, OUTPUT);
+  pinMode(MOT2_A, OUTPUT);
+  pinMode(MOT2_B, OUTPUT);
+  pinMode(MOT3_A, OUTPUT);
+  pinMode(MOT3_B, OUTPUT);
+  pinMode(MOTS_EN, OUTPUT);
+  pinMode(US_TRIG, OUTPUT);
+  pinMode(US_ECHO, INPUT);
+  pinMode(IR1_VAL, INPUT);
+  pinMode(IR2_VAL, INPUT);
   pinMode(STATUS_LED, OUTPUT);
 
   digitalWrite(MOTS_EN, HIGH);
 
   Serial.begin(9600);
-    
+
   I2C_Init();
-  digitalWrite(STATUS_LED,LOW);
+  digitalWrite(STATUS_LED, LOW);
   delay(1500);
 
   Accel_Init();
@@ -76,44 +83,45 @@ void setup(){
 
   delay(20);
 
-  for(int i=0 ; i<32 ; i++)    // We take some readings... /////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!HIER LÄUFT WAS FALSCH!!!!!!!!!!!!!! //TODO
-  {
+  for (int i = 0 ; i < 32 ; i++) { // We take some readings... /////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!HIER LÄUFT WAS FALSCH!!!!!!!!!!!!!! //TODO
     Read_Gyro();
     Read_Accel();
-    for(int y=0; y<6; y++)   // Cumulate values
+    for (int y = 0; y < 6; y++) // Cumulate values
       AN_OFFSET[y] += AN[y];
     delay(20);
   }
 
-  for(int y=0; y<6; y++)
-    AN_OFFSET[y] = AN_OFFSET[y]/32;
+  for (int y = 0; y < 6; y++) {
+    AN_OFFSET[y] = AN_OFFSET[y] / 32;
+  }
 
-  AN_OFFSET[5]-=GRAVITY*SENSOR_SIGN[5];
+  AN_OFFSET[5] -= GRAVITY * SENSOR_SIGN[5];
 
   //Serial.println("Offset:");
-  for(int y=0; y<6; y++)
+  for (int y = 0; y < 6; y++) {
     Serial.println(AN_OFFSET[y]);
+  }
 
   delay(2000);
-  digitalWrite(STATUS_LED,HIGH);
+  digitalWrite(STATUS_LED, HIGH);
 
-  timer=millis();
+  timer = millis();
   delay(20);
-  counter=0;
+  counter = 0;
 }
 
-void Hoehenregelung(){
-  int power = 50-ir_distance;
+void Hoehenregelung(unsigned int distance, int offset, int Kp) {
+  int power = offset - distance;
   if (power < 0) {
     power = -power;
-    power = power*4;
+    power = power * Kp;
     if (power > 255) {
       power = 255;
     }
     analogWrite(MOT1_A, power);
     digitalWrite(MOT1_B, LOW);
-  }else {
-    power = power*4;
+  } else {
+    power = power * Kp;
     if (power > 255) {
       power = 255;
     }
@@ -122,105 +130,105 @@ void Hoehenregelung(){
   }
 }
 
-void IMU_Zeug(){
-if((millis()-timer)>=20)  // IMU runs at 50Hz
-  {
+void IMU_Zeug() {
+  if ((millis() - timer) >= 20) { // IMU runs at 50Hz
     counter++;
     timer_old = timer;
-    timer=millis();
-    if (timer>timer_old)
-      G_Dt = (timer-timer_old)/1000.0;    // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
+    timer = millis();
+    if (timer > timer_old)
+      G_Dt = (timer - timer_old) / 1000.0; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
     else
       G_Dt = 0;
-    
+
     // *** DCM algorithm
     // Data adquisition
     Read_Gyro();   // This read gyro data
     Read_Accel();     // Read I2C accelerometer
-    
-    if (counter > 5)  // Read compass data at 10Hz... (5 loop runs)
-      {
-      counter=0;
+
+    if (counter > 5) { // Read compass data at 10Hz... (5 loop runs)
+      counter = 0;
       Read_Compass();    // Read I2C magnetometer
-      Compass_Heading(); // Calculate magnetic heading  
-      }
-    
+      Compass_Heading(); // Calculate magnetic heading
+    }
+
     // Calculations...
-    Matrix_update(); 
+    Matrix_update();
     Normalize();
     Drift_correction();
     Euler_angles();
     // ***
-    #ifdef DEBUG_IMU
-      printdata();
-    #endif
+#ifdef DEBUG_IMU
+    printdata();
+#endif
   }
 }
 
-void US(){
-  digitalWrite(US_TRIG, LOW);  
-  delayMicroseconds(5); 
- 
-  digitalWrite(US_TRIG, HIGH);  
-  delayMicroseconds(10);
-  
+unsigned int US_read_and_print() {
   digitalWrite(US_TRIG, LOW);
-  duration = pulseIn(US_ECHO, HIGH, 25000); // US_ECHO-Zeit messen
-  
+  delayMicroseconds(5);
+
+  digitalWrite(US_TRIG, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(US_TRIG, LOW);
+  unsigned long duration = pulseIn(US_ECHO, HIGH, 25000); // US_ECHO-Zeit messen
+
   // US_ECHO-Zeit halbieren (weil hin und zurÃ¼ck, der doppelte Weg ist)
-  duration = (duration/2); 
+  duration /= 2;
   // Zeit des Schalls durch Luft in Zentimeter umrechnen
-  distance = duration / 29.1;
+  long distance = duration / 29.1;
 
   Serial.print("US "); Serial.print(distance);
-  if (distance >= 200 || distance <= 0){
+  if (distance >= 200 || distance <= 0) {
     Serial.print("\t Out of range");
   }
+
+  return distance;
 }
 
-void loop(){
+
+void loop() {
 
   //IMU_Zeug();
-  US();
-  ir_distance = IR_1.get_distance();
+  us_distance = US_read_and_print();
+  ir1_distance = IR_1.get_distance();
   ir2_distance    = IR_2.get_distance();
-  Serial.print("\t");Serial.print("IR1 "); Serial.print(ir_distance);
-  Serial.print("\t");Serial.print("IR2 "); Serial.println(ir2_distance);
-  Hoehenregelung();
+  Serial.print("\t"); Serial.print("IR1 "); Serial.print(ir1_distance);
+  Serial.print("\t"); Serial.print("IR2 "); Serial.println(ir2_distance);
+  Hoehenregelung(us_distance, 50, 4);
 
-  switch(S) {
-  case START: 
-    {
+  switch (S) {
+    case START:
+      {
 
-      break;
-    }
-  case GERADEAUS: 
-    {
-      //Motor volle Pulle an
-      break;
-    }
-  case TREPPE: 
-    {
+        break;
+      }
+    case GERADEAUS:
+      {
+        //Motor volle Pulle an
+        break;
+      }
+    case TREPPE:
+      {
 
-      break;
-    }
-  case BARRIKADE: 
-    {
+        break;
+      }
+    case BARRIKADE:
+      {
 
-      break;
-    }
-  case LANDUNG: 
-    {
+        break;
+      }
+    case LANDUNG:
+      {
 
-      break;
-    }
-  default: 
-    {
+        break;
+      }
+    default:
+      {
 
-      break;
-    }
+        break;
+      }
   }
 }
-
 
 
