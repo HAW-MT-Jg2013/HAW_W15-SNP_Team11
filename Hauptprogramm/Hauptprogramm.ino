@@ -4,6 +4,7 @@
 #include <L3G.h>
 #include <LSM303.h>
 #include <Wire.h>
+#include "sharp.h"
 
 // --- PINS ---
 #define US_TRIG   8  // an HC-SR04 Trig
@@ -34,11 +35,16 @@
 
 // --- OPTIONEN ---
 //#define DEBUG_IR
-//#define DEBUG_IMU
+#define DEBUG_IMU
 
 // --- VARIABLEN ---
-long duration=0;
+unsigned long duration=0;
 long distance=0;
+unsigned int ir_distance=0;
+unsigned int ir2_distance=0;
+
+Sharp IR_1 = Sharp(IR1_VAL);
+Sharp IR_2 = Sharp(IR2_VAL);
 
 #include "IMU.h"
 
@@ -59,7 +65,7 @@ void setup(){
   digitalWrite(MOTS_EN, HIGH);
 
   Serial.begin(9600);
-
+    
   I2C_Init();
   digitalWrite(STATUS_LED,LOW);
   delay(1500);
@@ -70,7 +76,7 @@ void setup(){
 
   delay(20);
 
-  for(int i=0 ; i<32 ; i++)    // We take some readings...
+  for(int i=0 ; i<32 ; i++)    // We take some readings... /////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!HIER LÄUFT WAS FALSCH!!!!!!!!!!!!!! //TODO
   {
     Read_Gyro();
     Read_Accel();
@@ -97,8 +103,23 @@ void setup(){
 }
 
 void Hoehenregelung(){
-
-
+  int power = 50-ir_distance;
+  if (power < 0) {
+    power = -power;
+    power = power*4;
+    if (power > 255) {
+      power = 255;
+    }
+    analogWrite(MOT1_A, power);
+    digitalWrite(MOT1_B, LOW);
+  }else {
+    power = power*4;
+    if (power > 255) {
+      power = 255;
+    }
+    analogWrite(MOT1_B, power);
+    digitalWrite(MOT1_A, LOW);
+  }
 }
 
 void IMU_Zeug(){
@@ -136,9 +157,35 @@ if((millis()-timer)>=20)  // IMU runs at 50Hz
   }
 }
 
+void US(){
+  digitalWrite(US_TRIG, LOW);  
+  delayMicroseconds(5); 
+ 
+  digitalWrite(US_TRIG, HIGH);  
+  delayMicroseconds(10);
+  
+  digitalWrite(US_TRIG, LOW);
+  duration = pulseIn(US_ECHO, HIGH, 25000); // US_ECHO-Zeit messen
+  
+  // US_ECHO-Zeit halbieren (weil hin und zurÃ¼ck, der doppelte Weg ist)
+  duration = (duration/2); 
+  // Zeit des Schalls durch Luft in Zentimeter umrechnen
+  distance = duration / 29.1;
+
+  Serial.print("US "); Serial.print(distance);
+  if (distance >= 200 || distance <= 0){
+    Serial.print("\t Out of range");
+  }
+}
+
 void loop(){
 
-  IMU_Zeug();
+  //IMU_Zeug();
+  US();
+  ir_distance = IR_1.get_distance();
+  ir2_distance    = IR_2.get_distance();
+  Serial.print("\t");Serial.print("IR1 "); Serial.print(ir_distance);
+  Serial.print("\t");Serial.print("IR2 "); Serial.println(ir2_distance);
   Hoehenregelung();
 
   switch(S) {
