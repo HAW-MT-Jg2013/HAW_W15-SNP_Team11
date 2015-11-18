@@ -4,14 +4,14 @@
  * Abstandsermittelung durch Wertetabelle und abschnittsweise lineare Interpolation
  */
  
-#include "sharp.h"
+#include "sharp_IR.h"
 
 
-Sharp::Sharp(int pin) {
+SharpIR::SharpIR(int pin) {
   this->pin = pin;
 }
 
-unsigned int Sharp::get_distance() {
+unsigned int SharpIR::get_distance() {
 
   float volts = analogRead(pin)*5/1024.0;
 

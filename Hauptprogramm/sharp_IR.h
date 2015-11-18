@@ -6,8 +6,8 @@
 
 #include <arduino.h>
 
-#ifndef SHARP_H
-#define SHARP_H
+#ifndef SHARP_IR_H
+#define SHARP_IR_H
 
 // Wertetabelle: cm - V
 static unsigned int dist[] = {130, // 0,5V
@@ -16,11 +16,11 @@ static unsigned int dist[] = {130, // 0,5V
                               30,  // 2,0V
                               21}; // 2,5V
 
-class Sharp {
+class SharpIR {
   unsigned int pin;
 
   public:
-  Sharp(int pin);
+  SharpIR(int pin);
   unsigned int get_distance();
 };
 
