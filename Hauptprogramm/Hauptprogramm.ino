@@ -25,7 +25,11 @@
 
 #define IMU_SCL   2
 #define IMU_SDA   3
-#define STATUS_LED 4
+
+#define LED_GR    A2
+#define LED_GE    A3
+#define LED_R1    A4
+#define LED_R2    A5
 
 
 //--- OPTIONEN ---
@@ -78,13 +82,17 @@ void setup() {
   pinMode(US_ECHO, INPUT);
   pinMode(IR1_VAL, INPUT);
   pinMode(IR2_VAL, INPUT);
-  pinMode(STATUS_LED, OUTPUT);
+  pinMode(LED_GR, OUTPUT);
+  pinMode(LED_GE, OUTPUT);
+  pinMode(LED_R1, OUTPUT);
+  pinMode(LED_R2, OUTPUT);
 
   digitalWrite(MOTS_EN, HIGH);
+  digitalWrite(LED_GE, HIGH);
 
 #ifdef SERIAL
   Serial.begin(9600);
-  while (!Serial);
+  //while (!Serial);
 #endif
 
   I2C_Init();
@@ -119,10 +127,14 @@ void setup() {
   timer = millis();
   delay(20);
   counter = 0;
+
+  digitalWrite(LED_GE, LOW);
 }
 
 
 void loop() {
+  digitalWrite(LED_GR, HIGH);
+  
   IMU_Berechnungen();
 
   hoehe = IR_U.get_distance();
@@ -143,9 +155,12 @@ void loop() {
     case START:
       {
         //Motor(255, 3);
+        
+        LED_BlinkMain(1);
 
         if (hoehe > 80) {
           abschnitt = GERADEAUS;
+          digitalWrite(LED_GR, LOW);
 #ifdef SERIAL Serial.println(" -- to state GERADEAUS -- ");
 #endif
         }
@@ -153,8 +168,10 @@ void loop() {
       }
     case GERADEAUS:
       {
-        HeightControl(hoehe, 100);
-        HeadingControl(yaw, 0, 0); // TODO parameters
+        //HeightControl(hoehe, 100);
+        HeadingControl(yaw, 0, 0);
+
+        LED_BlinkMain(2);
 
         if (0) { // if Treppe erkannt
           abschnitt = TREPPE;
@@ -165,16 +182,18 @@ void loop() {
       }
     case TREPPE:
       {
-        // Höhenregelung an
         HeightControl(hoehe, 100);
+
+        LED_BlinkMain(3);
 
         switch (treppe_abschnitt) {
           case GERADE1:
+            LED_StateStairs(1);
           case GERADE2:
             {
-              // alles fuer Geradeausflug
-              // TODO Seitenabstands-Regelung
+              SideDistanceControl(abst_links, 150, 75);
 
+              LED_StateStairs(3);
 
               if (treppe_abschnitt == GERADE1 && abst_vorne < 150) {
                 treppe_abschnitt = KURVE1;
@@ -190,9 +209,12 @@ void loop() {
               break;
             }
           case KURVE1:
+            LED_StateStairs(2);
           case KURVE2:
             {
               // TODO 90° drehen
+
+              LED_StateStairs(4);
 
               if (treppe_abschnitt == KURVE1 && drehung > 80) {
                 treppe_abschnitt = GERADE2;
@@ -208,8 +230,9 @@ void loop() {
             }
           case GERADE3:
             {
-              // alles fuer Geradeausflug
-              // TODO Seitenabstands-Regelung
+              SideDistanceControl(abst_links, 150, 75);
+
+              LED_StateStairs(5);
 
               if (abst_links == 0) {
                 abschnitt = BARRIKADE;
@@ -230,6 +253,8 @@ void loop() {
         // Höhe leicht erhöhen
         HeightControl(hoehe, 120);
 
+        LED_BlinkMain(4);
+
         if (hoehe > 140) { // Höhe sehr groß - über Abgrund TODO
           abschnitt = ABSTIEG;
 #ifdef SERIAL Serial.println(" -- to state ABSTIEG -- ");
@@ -241,6 +266,8 @@ void loop() {
       {
         // TODO mit Motor nach unten fliegen
 
+        LED_BlinkMain(5);
+
         if (hoehe < 100) {
           abschnitt = LANDUNG;
 #ifdef SERIAL Serial.println(" -- to state LANDUNG -- ");
@@ -251,6 +278,8 @@ void loop() {
     case LANDUNG:
       {
         // TODO sanfte Landung
+
+        LED_BlinkMain(6);
 
         break;
       }

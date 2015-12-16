@@ -18,6 +18,14 @@ long S_Isum = 0;
 #define S_Ki 10
 #define S_Kp 10
 
+// LED status blink
+unsigned long LED1_lasttime1 = millis();
+unsigned long LED1_lasttime2 = millis();
+int LED1_counter = 0;
+unsigned long LED2_lasttime1 = millis();
+unsigned long LED2_lasttime2 = millis();
+int LED2_counter = 0;
+
 
 void Motor(int power, int motNr) {
   int pinA, pinB;
@@ -100,10 +108,43 @@ void SideDistanceControl(int actual, int desired, int baseThrust) {
 
   int delta = (diff * S_Kp) + (S_Ki * S_Isum / S_Iinterval);
 
-  Motor(baseThrust - delta, 1);
-  Motor(baseThrust + delta, 2);
+  Motor(baseThrust + delta, 1);
+  Motor(baseThrust - delta, 2);
 }
 
+
+void LED_BlinkMain(int blinkAnzahl) {
+  if (LED1_counter < blinkAnzahl*2) {
+    if ((millis() - LED1_lasttime1) > 150) {
+      digitalWrite(LED_R1, !digitalRead(LED_R1));
+      LED1_lasttime1 = millis();
+      LED1_counter++;
+    }
+  }else {
+    if ((millis() - LED1_lasttime2) > 3000) {
+      digitalWrite(LED_R1, LOW);
+      LED1_lasttime2 = millis();
+      LED1_counter = 0;
+    }
+  }
+}
+
+
+void LED_StateStairs(int blinkAnzahl) {
+  if (LED2_counter < blinkAnzahl*2) {
+    if ((millis() - LED2_lasttime1) > 150) {
+      digitalWrite(LED_R1, !digitalRead(LED_R2));
+      LED2_lasttime1 = millis();
+      LED2_counter++;
+    }
+  }else {
+    if ((millis() - LED2_lasttime2) > 3000) {
+      digitalWrite(LED_R2, LOW);
+      LED2_lasttime2 = millis();
+      LED2_counter = 0;
+    }
+  }
+}
 
 void IMU_Berechnungen() {
   if ((millis() - timer) >= 20) { // IMU runs at 50Hz
