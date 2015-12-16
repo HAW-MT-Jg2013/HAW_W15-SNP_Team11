@@ -29,10 +29,10 @@
 
 
 //--- OPTIONEN ---
+#define SERIAL
 
 // IMU
-#define OUTPUTMODE_C  //for corrected data, comment for uncorrectet data of gyro (with drift)
-
+//#define OUTPUTMODE_C   //for corrected data, comment for uncorrectet data of gyro (with drift)
 //#define PRINT_DCM      //Will print the whole direction cosine matrix
 //#define PRINT_ANALOGS  //Will print the analog raw data
 #define PRINT_EULER    //Will print the Euler angles Roll, Pitch and Yaw
@@ -63,13 +63,7 @@ typedef enum treppe_st {GERADE1, KURVE1, GERADE2, KURVE2, GERADE3};
 treppe_st treppe_abschnitt = GERADE1;
 
 
-// I-Regler
-unsigned long I_lastTime = millis();
-int I_interval = 100;
-long I_sum = 0;
-#define I_MAX 1000
-#define K_I 10
-#define K_P 2
+#include "functions.h"
 
 
 void setup() {
@@ -88,8 +82,10 @@ void setup() {
 
   digitalWrite(MOTS_EN, HIGH);
 
+#ifdef SERIAL
   Serial.begin(9600);
   while (!Serial);
+#endif
 
   I2C_Init();
   delay(1500);
@@ -125,94 +121,8 @@ void setup() {
   counter = 0;
 }
 
-void Motor(int power, int motNr) {
-  int pinA, pinB;
-
-  if (motNr == 1) {
-    pinA = MOT1_A;
-    pinB = MOT1_B;
-  } else if (motNr == 2) {
-    pinA = MOT2_A;
-    pinB = MOT2_B;
-  } else if (motNr == 3) {
-    pinA = MOT3_A;
-    pinB = MOT3_B;
-  }
-  
-  if (power < 0) {
-    power = -power;
-    if (power > 255) {
-      power = 255;
-    }
-    analogWrite(pinA, power);
-    digitalWrite(pinB, LOW);
-  } else {
-    if (power > 255) {
-      power = 255;
-    }
-    analogWrite(pinB, power);
-    digitalWrite(pinA, LOW);
-  }
-}
-
-void Hoehenregelung(unsigned int distance, int offset) {
-  int diff = offset - distance;
-  
-  if ( (millis() - I_lastTime) > I_interval ) {
-    I_lastTime = millis();
-
-    I_sum += diff;
-    if(I_sum > I_MAX) {
-      I_sum = I_MAX;
-    }else if (I_sum < -I_MAX) {
-      I_sum = -I_MAX;
-    }
-  }
-
-  int power = (diff * K_P) + (K_I * I_sum/I_interval);
-
-  Motor(power, 3);
-}
-
-
-
-void IMU_Berechnungen() {
-  if ((millis() - timer) >= 20) { // IMU runs at 50Hz
-    counter++;
-    timer_old = timer;
-    timer = millis();
-    if (timer > timer_old) {
-      G_Dt = (timer - timer_old) / 1000.0; // Real time of loop run. We use this on the DCM algorithm (gyro integration time)
-    } else {
-      G_Dt = 0;
-    }
-
-    // *** DCM algorithm
-    // Data adquisition
-    Read_Gyro();   // This read gyro data
-    Read_Accel();     // Read I2C accelerometer
-
-    if (counter > 5) { // Read compass data at 10Hz... (5 loop runs)
-      counter = 0;
-      Read_Compass();    // Read I2C magnetometer
-      Compass_Heading(); // Calculate magnetic heading
-    }
-
-    // Calculations...
-    Matrix_update();
-    Normalize();
-    Drift_correction();
-    Euler_angles();
-    // ***
-#ifdef DEBUG_IMU
-    printdata();
-#endif
-  }
-}
-
 
 void loop() {
-
   IMU_Berechnungen();
 
   hoehe = IR_U.get_distance();
@@ -222,40 +132,41 @@ void loop() {
 #ifdef DEBUG_SENSORS
   Serial.print("\t"); Serial.print("US1 "); Serial.print(abst_links);
   Serial.print("\t"); Serial.print("IR1 "); Serial.print(abst_vorne);
-  Serial.print("\t"); Serial.print("IR2 "); Serial.println(hoehe);
+  Serial.print("\t"); Serial.print("IR2 "); Serial.print(hoehe);
+  //Serial.print("\t"); Serial.print("MAG ");
+  //Serial.print(c_magnetom_x); Serial.print (","); Serial.print(c_magnetom_y); Serial.print (","); Serial.print(c_magnetom_z);
+  Serial.print("\n");
 #endif
-  
 
 
   switch (abschnitt) {
     case START:
       {
-        // Höhe voll an
+        //Motor(255, 3);
 
         if (hoehe > 80) {
           abschnitt = GERADEAUS;
+#ifdef SERIAL Serial.println(" -- to state GERADEAUS -- ");
+#endif
         }
         break;
       }
     case GERADEAUS:
       {
-        // Höhenregelung an
-        Hoehenregelung(hoehe, 100);
-        //analogWrite(MOT1_A, 50);
-        //digitalWrite(MOT1_B, LOW);
-        
-
-        // vorwärts
+        HeightControl(hoehe, 100);
+        HeadingControl(yaw, 0, 0); // TODO parameters
 
         if (0) { // if Treppe erkannt
           abschnitt = TREPPE;
+#ifdef SERIAL Serial.println(" -- to state TREPPE -- ");
+#endif
         }
         break;
       }
     case TREPPE:
       {
         // Höhenregelung an
-        Hoehenregelung(hoehe, 100);
+        HeightControl(hoehe, 100);
 
         switch (treppe_abschnitt) {
           case GERADE1:
@@ -268,9 +179,13 @@ void loop() {
               if (treppe_abschnitt == GERADE1 && abst_vorne < 150) {
                 treppe_abschnitt = KURVE1;
                 drehung = 0;
+#ifdef SERIAL Serial.println(" -- to state KURVE1 -- ");
+#endif
               } else if (treppe_abschnitt == GERADE2 && abst_vorne < 150) {
                 treppe_abschnitt = KURVE2;
                 drehung = 0;
+#ifdef SERIAL Serial.println(" -- to state KURVE2 -- ");
+#endif
               }
               break;
             }
@@ -281,8 +196,13 @@ void loop() {
 
               if (treppe_abschnitt == KURVE1 && drehung > 80) {
                 treppe_abschnitt = GERADE2;
+#ifdef SERIAL
+                Serial.println(" -- to state GERADE2 -- ");
+#endif
               } else if (treppe_abschnitt == KURVE2 && drehung > 80) {
                 treppe_abschnitt = GERADE3;
+#ifdef SERIAL Serial.println(" -- to state GERADE3 -- ");
+#endif
               }
               break;
             }
@@ -293,6 +213,8 @@ void loop() {
 
               if (abst_links == 0) {
                 abschnitt = BARRIKADE;
+#ifdef SERIAL Serial.println(" -- to state BARRIKADE -- ");
+#endif
               }
 
               break;
@@ -306,10 +228,12 @@ void loop() {
     case BARRIKADE:
       {
         // Höhe leicht erhöhen
-        Hoehenregelung(hoehe, 120);
+        HeightControl(hoehe, 120);
 
         if (hoehe > 140) { // Höhe sehr groß - über Abgrund TODO
           abschnitt = ABSTIEG;
+#ifdef SERIAL Serial.println(" -- to state ABSTIEG -- ");
+#endif
         }
         break;
       }
@@ -319,6 +243,8 @@ void loop() {
 
         if (hoehe < 100) {
           abschnitt = LANDUNG;
+#ifdef SERIAL Serial.println(" -- to state LANDUNG -- ");
+#endif
         }
         break;
       }
@@ -335,3 +261,4 @@ void loop() {
       }
   }
 }
+

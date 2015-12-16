@@ -6,15 +6,11 @@
 
 
 void printdata(void) {
-  Serial.print("!");
-
 #ifdef PRINT_EULER
-  Serial.print("ANG:");
-  Serial.print(ToDeg(roll));
-  Serial.print(",");
-  Serial.print(ToDeg(pitch));
-  Serial.print(",");
+  Serial.print("ANG: ");
   Serial.print(ToDeg(yaw));
+  Serial.print("\t");
+  Serial.print(MAG_Heading);
 #endif
 #ifdef PRINT_ANALOGS
   Serial.print(",AN:");
