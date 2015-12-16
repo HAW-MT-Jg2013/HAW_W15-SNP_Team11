@@ -154,11 +154,11 @@ void loop() {
   switch (abschnitt) {
     case START:
       {
-        //Motor(255, 3);
+        Motor(200, 3);
         
         LED_BlinkMain(1);
 
-        if (hoehe > 80) {
+        if (hoehe > 50) {
           abschnitt = GERADEAUS;
           digitalWrite(LED_GR, LOW);
 #ifdef SERIAL Serial.println(" -- to state GERADEAUS -- ");
@@ -168,8 +168,9 @@ void loop() {
       }
     case GERADEAUS:
       {
-        //HeightControl(hoehe, 100);
-        HeadingControl(yaw, 0, 0);
+        HeightControl(hoehe, 100);
+        //HeadingControl(yaw, 0, 100);
+        //SideDistanceControl(abst_links, 150, 50);
 
         LED_BlinkMain(2);
 

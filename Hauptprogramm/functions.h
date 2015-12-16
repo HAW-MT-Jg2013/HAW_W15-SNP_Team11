@@ -4,19 +4,19 @@ unsigned long H_Ilasttime = millis();
 int H_Iinterval = 100;
 long H_Isum = 0;
 #define H_Imax 1000
-#define H_Ki 10
-#define H_Kp 10
+#define H_Ki 3
+#define H_Kp 5
 
 // Parameter Regler Geradeaus (Yaw)
-#define Y_Kp 5
+#define Y_Kp 2
 
 // Parameter Regler Seitenabstand
 unsigned long S_Ilasttime = millis();
-int S_Iinterval = 100;
+int S_Iinterval = 10;
 long S_Isum = 0;
 #define S_Imax 1000
-#define S_Ki 10
-#define S_Kp 10
+#define S_Ki 1
+#define S_Kp 1
 
 // LED status blink
 unsigned long LED1_lasttime1 = millis();
