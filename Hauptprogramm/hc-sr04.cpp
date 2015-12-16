@@ -1,9 +1,9 @@
 /*
  * Klasse für den HC-SR04 Ultraschallsensor
- * 
+ *
  * Abstandsermittelung durch Schallgeschwindigkeit
  */
- 
+
 #include "hc-sr04.h"
 
 
@@ -33,7 +33,7 @@ unsigned int HC_SR04::get_distance() {
     return 0;
   } else {
     return distance;
-  } 
+  }
 
 }
 

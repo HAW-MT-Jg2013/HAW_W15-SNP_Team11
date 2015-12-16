@@ -1,6 +1,6 @@
 /*
  * Hilfsfunktionen für die Pololu AltIMU-10 v3
- * 
+ *
  * Datenausgabe
  */
 

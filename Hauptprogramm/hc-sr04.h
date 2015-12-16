@@ -1,6 +1,6 @@
 /*
  * Klasse für den HC-SR04 Ultraschallsensor
- * 
+ *
  * Abstandsermittelung durch Schallgeschwindigkeit
  */
 
@@ -11,12 +11,12 @@
 
 
 class HC_SR04 {
-  unsigned int trigger;
-  unsigned int echo;
+    unsigned int trigger;
+    unsigned int echo;
 
   public:
-  HC_SR04(int trigger, int echo);
-  unsigned int get_distance();
+    HC_SR04(int trigger, int echo);
+    unsigned int get_distance();
 };
 
 

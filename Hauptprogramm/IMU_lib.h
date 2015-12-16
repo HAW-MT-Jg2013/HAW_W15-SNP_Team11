@@ -1,6 +1,6 @@
 /*
  * Hilfsfunktionen für die Pololu AltIMU-10 v3
- * 
+ *
  * Hilfsfunktionen
  */
 
@@ -47,7 +47,7 @@
 // Positive pitch : nose down
 // Positive roll : right wing down
 // Positive yaw : counterclockwise
-int SENSOR_SIGN[9] = {1,-1,-1,-1,1,1,1,-1,-1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
+int SENSOR_SIGN[9] = {1, -1, -1, -1, 1, 1, 1, -1, -1}; //Correct directions x,y,z - gyro, accelerometer, magnetometer
 
 float G_Dt = 0.02;  // Integration time (DCM algorithm)  We will run the integration loop at 50Hz if possible
 
