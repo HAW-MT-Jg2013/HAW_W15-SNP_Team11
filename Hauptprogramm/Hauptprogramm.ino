@@ -147,6 +147,7 @@ void loop() {
   Serial.print("\t"); Serial.print("IR2 "); Serial.print(hoehe);
   //Serial.print("\t"); Serial.print("MAG ");
   //Serial.print(c_magnetom_x); Serial.print (","); Serial.print(c_magnetom_y); Serial.print (","); Serial.print(c_magnetom_z);
+  //Serial.print("\t"); Serial.print("YAW "); Serial.print(yaw);
   Serial.print("\n");
 #endif
 
@@ -168,8 +169,8 @@ void loop() {
       }
     case GERADEAUS:
       {
-        HeightControl(hoehe, 100);
-        //HeadingControl(yaw, 0, 100);
+        HeightControl(hoehe, 125);
+        HeadingControl(yaw, 0, 50);
         //SideDistanceControl(abst_links, 150, 50);
 
         LED_BlinkMain(2);
@@ -183,10 +184,9 @@ void loop() {
       }
     case TREPPE:
       {
-        HeightControl(hoehe, 100);
+        HeightControl(hoehe, 125);
 
         LED_BlinkMain(3);
-
         switch (treppe_abschnitt) {
           case GERADE1:
             LED_StateStairs(1);
