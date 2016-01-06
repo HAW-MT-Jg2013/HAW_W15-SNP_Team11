@@ -1,7 +1,6 @@
 
 // Parameter Regler Hoehe
 unsigned long H_Ilasttime = millis();
-unsigned long H_Dlasttime = millis();
 int H_Iinterval = 20;
 int H_Dinterval = 20;
 long H_Isum = 0;
@@ -13,7 +12,16 @@ int H_Doutput = 0;
 #define H_Kd 10
 
 // Parameter Regler Geradeaus (Yaw)
-#define Y_Kp 2
+unsigned long Y_Ilasttime = millis();
+int Y_Iinterval = 20;
+int Y_Dinterval = 20;
+long Y_Isum = 0;
+int Y_Dlastdiff = 0;
+int Y_Doutput = 0;
+#define Y_Imax 1000
+#define Y_Ki 0
+#define Y_Kp 1
+#define Y_Kd 10
 
 // Parameter Regler Seitenabstand
 unsigned long S_Ilasttime = millis();
@@ -22,6 +30,7 @@ long S_Isum = 0;
 #define S_Imax 1000
 #define S_Ki 1
 #define S_Kp 1
+
 
 // LED status blink
 unsigned long LED1_lasttime1 = millis();
@@ -72,7 +81,6 @@ void Motor(int power, int motNr) {
 }
 
 void HeightControl(unsigned int distance, int offset) {
-
   int diff = offset - distance;
 
   if ( (millis() - H_Ilasttime) > H_Iinterval ) {
@@ -108,7 +116,23 @@ void HeadingControl(float actual, float desired, int baseThrust) {
     diff += 360;
   }
 
-  int delta = diff * Y_Kp;
+  if ( (millis() - Y_Ilasttime) > Y_Iinterval ) {
+    Y_Ilasttime = millis();
+
+    // I-Regler
+    Y_Isum += diff;
+    if (Y_Isum > Y_Imax) {
+      Y_Isum = Y_Imax;
+    } else if (Y_Isum < -Y_Imax) {
+      Y_Isum = -Y_Imax;
+    }
+
+    // D-Regler
+    Y_Doutput = Y_Kd * (diff - Y_Dlastdiff) / Y_Dinterval;
+    Y_Dlastdiff = diff;
+  }
+
+  int delta = (diff * Y_Kp) + (Y_Ki * Y_Isum / Y_Iinterval) + Y_Doutput;
 
   Motor(baseThrust - delta, 1);
   Motor(baseThrust + delta, 2);
