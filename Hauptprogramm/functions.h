@@ -31,29 +31,38 @@ unsigned long LED2_lasttime1 = millis();
 unsigned long LED2_lasttime2 = millis();
 int LED2_counter = 0;
 
+// Motoren
+#define M1_MIN_POW 45
+#define M2_MIN_POW 45
+#define M3_MIN_POW 35
+
 
 void Motor(int power, int motNr) {
-  int pinA, pinB;
+  int pinA, pinB, minPower;
 
   if (motNr == 1) {
     pinA = MOT1_A;
     pinB = MOT1_B;
+    minPower = M1_MIN_POW;
   } else if (motNr == 2) {
     pinA = MOT2_A;
     pinB = MOT2_B;
+    minPower = M2_MIN_POW;
   } else if (motNr == 3) {
     pinA = MOT3_A;
     pinB = MOT3_B;
+    minPower = M3_MIN_POW;
   }
 
   if (power < 0) {
-    power = -power;
+    power = -power + minPower;
     if (power > 255) {
       power = 255;
     }
     analogWrite(pinA, power);
     digitalWrite(pinB, LOW);
   } else {
+    power = power + minPower;
     if (power > 255) {
       power = 255;
     }
