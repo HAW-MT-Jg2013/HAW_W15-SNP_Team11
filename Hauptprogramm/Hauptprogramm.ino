@@ -92,7 +92,7 @@ void setup() {
 
 #ifdef SERIAL
   Serial.begin(9600);
-  //while (!Serial);
+  delay(2000);
 #endif
 
   I2C_Init();
@@ -134,7 +134,7 @@ void setup() {
 
 void loop() {
   digitalWrite(LED_GR, HIGH);
-  
+
   IMU_Berechnungen();
 
   hoehe = IR_U.get_distance();
@@ -155,7 +155,7 @@ void loop() {
     case START:
       {
         Motor(200, 3);
-        
+
         LED_BlinkMain(1);
 
         if (hoehe > 50) {

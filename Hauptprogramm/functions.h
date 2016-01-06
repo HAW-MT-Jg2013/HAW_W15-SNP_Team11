@@ -1,11 +1,16 @@
 
 // Parameter Regler Hoehe
 unsigned long H_Ilasttime = millis();
-int H_Iinterval = 100;
+unsigned long H_Dlasttime = millis();
+int H_Iinterval = 20;
+int H_Dinterval = 20;
 long H_Isum = 0;
+int H_Dlastdiff = 0;
+int H_Doutput = 0;
 #define H_Imax 1000
-#define H_Ki 3
-#define H_Kp 5
+#define H_Ki 1
+#define H_Kp 10
+#define H_Kd 10
 
 // Parameter Regler Geradeaus (Yaw)
 #define Y_Kp 2
@@ -58,21 +63,29 @@ void Motor(int power, int motNr) {
 }
 
 void HeightControl(unsigned int distance, int offset) {
+
   int diff = offset - distance;
 
   if ( (millis() - H_Ilasttime) > H_Iinterval ) {
     H_Ilasttime = millis();
 
+    // I-Regler
     H_Isum += diff;
     if (H_Isum > H_Imax) {
       H_Isum = H_Imax;
     } else if (H_Isum < -H_Imax) {
       H_Isum = -H_Imax;
     }
+
+    // D-Regler
+    H_Doutput = H_Kd * (diff - H_Dlastdiff) / H_Dinterval;
+    H_Dlastdiff = diff;
   }
 
-  int power = (diff * H_Kp) + (H_Ki * H_Isum / H_Iinterval);
-
+  int power = (diff * H_Kp) + (H_Ki * H_Isum / H_Iinterval) + H_Doutput;
+  if (power < 0) {
+    power = 0;
+  }
   Motor(power, 3);
 }
 
@@ -114,13 +127,13 @@ void SideDistanceControl(int actual, int desired, int baseThrust) {
 
 
 void LED_BlinkMain(int blinkAnzahl) {
-  if (LED1_counter < blinkAnzahl*2) {
+  if (LED1_counter < blinkAnzahl * 2) {
     if ((millis() - LED1_lasttime1) > 150) {
       digitalWrite(LED_R1, !digitalRead(LED_R1));
       LED1_lasttime1 = millis();
       LED1_counter++;
     }
-  }else {
+  } else {
     if ((millis() - LED1_lasttime2) > 3000) {
       digitalWrite(LED_R1, LOW);
       LED1_lasttime2 = millis();
@@ -131,13 +144,13 @@ void LED_BlinkMain(int blinkAnzahl) {
 
 
 void LED_StateStairs(int blinkAnzahl) {
-  if (LED2_counter < blinkAnzahl*2) {
+  if (LED2_counter < blinkAnzahl * 2) {
     if ((millis() - LED2_lasttime1) > 150) {
       digitalWrite(LED_R1, !digitalRead(LED_R2));
       LED2_lasttime1 = millis();
       LED2_counter++;
     }
-  }else {
+  } else {
     if ((millis() - LED2_lasttime2) > 3000) {
       digitalWrite(LED_R2, LOW);
       LED2_lasttime2 = millis();
