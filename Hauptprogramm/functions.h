@@ -82,6 +82,18 @@ void Motor(int power, int motNr) {
   }
 }
 
+float correctRad (float rad) {
+  float return_val = 0;
+  if (rad > PI) {
+    return_val =  (rad - (2 * PI));
+  } else if (rad < -PI) {
+    return_val =  (rad + (2 * PI));
+  } else {
+    return_val = rad;
+  }
+  return return_val;
+}
+
 void HeightControl(unsigned int distance, int offset) {
   int diff = offset - distance;
 
@@ -161,19 +173,14 @@ void SideDistanceControl2(int actual, float* drehung_soll) {
   */
 
   if (actual < 110 && actual != 0) {
-    delta = 0.01 * 0.01745329252; // radiant
+    delta = 0.05 * 0.01745329252; // radiant
   } else if (actual > 190) {
-    delta = -0.01 * 0.01745329252; // radiant
+    delta = -0.05 * 0.01745329252; // radiant
   }
 
   float return_val = *drehung_soll + delta;
-  if (return_val > PI) {
-    return_val = return_val - (2 * PI);
-  } else if (return_val < -PI) {
-    return_val = return_val + (2 * PI);
-  }
 
-  *drehung_soll = return_val;
+  *drehung_soll = correctRad(return_val);
 }
 
 

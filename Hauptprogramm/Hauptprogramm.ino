@@ -182,8 +182,6 @@ void loop() {
     case GERADEAUS:
       {
         HeightControl(hoehe, 130);
-
-        SideDistanceControl2(abst_links, &drehung_soll);
         HeadingControl(yaw, drehung_soll, SCHUB);
 
         LED_BlinkMain(2);
@@ -221,7 +219,7 @@ void loop() {
 
               if (abst_vorne < 100 && hoehe > 80) {
                 treppe_abschnitt = KURVE1;
-                drehung_soll = yaw;
+                //drehung_soll = yaw;
                 some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state KURVE1 -- ");
@@ -238,7 +236,7 @@ void loop() {
 
               if (abst_vorne < 100 && hoehe > 80) {
                 treppe_abschnitt = KURVE2;
-                drehung_soll = yaw;
+                //drehung_soll = yaw;
                 some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state KURVE2 -- ");
@@ -269,12 +267,12 @@ void loop() {
               LED_StateStairs(2);
 
               if (millis() - some_time > (stop_time + turn_time + 5000)) {
-                yaw = ToRad(90);
+                yaw = correctRad(drehung_soll + ToRad(90));
               }
 
               if (ToDeg(yaw) > (drehung_soll + 80)) {
                 treppe_abschnitt = GERADE2;
-                drehung_soll = drehung_soll + 90;
+                drehung_soll = correctRad(drehung_soll + ToRad(90));
                 some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state GERADE2 -- ");
@@ -305,12 +303,12 @@ void loop() {
               LED_StateStairs(4);
 
               if (millis() - some_time > (stop_time + turn_time + 5000)) {
-                yaw = ToRad(90);
+                yaw = correctRad(drehung_soll +ToRad(90));
               }
 
               if (yaw > (drehung_soll + 80)) {
                 treppe_abschnitt = GERADE3;
-                drehung_soll = drehung_soll + 90;
+                drehung_soll = correctRad(drehung_soll + ToRad(90));
                 some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state GERADE3 -- ");
