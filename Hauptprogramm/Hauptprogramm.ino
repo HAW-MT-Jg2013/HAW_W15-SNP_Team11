@@ -200,25 +200,32 @@ void loop() {
       }
     case TREPPE:
       {
-        HeightControl(hoehe, 125);
+        HeightControl(hoehe, 150);
 
         LED_BlinkMain(3);
         switch (treppe_abschnitt) {
           case GERADE1:
-            LED_StateStairs(1);
+            {
+              SideDistanceControl(abst_links, 150, 75);
+
+              LED_StateStairs(1);
+
+              if (abst_vorne < 150) {
+                treppe_abschnitt = KURVE1;
+                drehung = 0;
+#ifdef SERIAL
+                Serial.println(" -- to state KURVE1 -- ");
+#endif
+              }
+              break;
+            }
           case GERADE2:
             {
               SideDistanceControl(abst_links, 150, 75);
 
               LED_StateStairs(3);
 
-              if (treppe_abschnitt == GERADE1 && abst_vorne < 150) {
-                treppe_abschnitt = KURVE1;
-                drehung = 0;
-#ifdef SERIAL
-                Serial.println(" -- to state KURVE1 -- ");
-#endif
-              } else if (treppe_abschnitt == GERADE2 && abst_vorne < 150) {
+              if (abst_vorne < 150) {
                 treppe_abschnitt = KURVE2;
                 drehung = 0;
 #ifdef SERIAL
@@ -228,19 +235,26 @@ void loop() {
               break;
             }
           case KURVE1:
-            LED_StateStairs(2);
+            {
+              // TODO 90° drehen
+
+              LED_StateStairs(2);
+
+              if (drehung > 80) {
+                treppe_abschnitt = GERADE2;
+#ifdef SERIAL
+                Serial.println(" -- to state GERADE2 -- ");
+#endif
+              }
+              break;
+            }
           case KURVE2:
             {
               // TODO 90° drehen
 
               LED_StateStairs(4);
 
-              if (treppe_abschnitt == KURVE1 && drehung > 80) {
-                treppe_abschnitt = GERADE2;
-#ifdef SERIAL
-                Serial.println(" -- to state GERADE2 -- ");
-#endif
-              } else if (treppe_abschnitt == KURVE2 && drehung > 80) {
+              if (drehung > 80) {
                 treppe_abschnitt = GERADE3;
 #ifdef SERIAL
                 Serial.println(" -- to state GERADE3 -- ");
