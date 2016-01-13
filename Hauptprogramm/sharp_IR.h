@@ -20,6 +20,10 @@ static unsigned int dist[] = {130, // 0,5V
 class SharpIR {
     unsigned int pin;
 
+    unsigned int mean_arr[20];
+    int mean_iterator;
+    unsigned int mean_sum;
+
   public:
     SharpIR(int pin);
     unsigned int get_distance();

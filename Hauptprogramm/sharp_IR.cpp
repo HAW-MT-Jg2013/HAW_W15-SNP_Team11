@@ -36,12 +36,24 @@ unsigned int SharpIR::get_distance() {
     dist_r = dist[key_r];
   }
 
+  int distance = dist_r -  (dist_r - dist_l) * (volts - key_l / 2.0) / 0.5;
+
+  // mean
+  mean_sum -= mean_arr[mean_iterator];
+  mean_arr[mean_iterator] = distance;
+  mean_sum += mean_arr[mean_iterator];
+  mean_iterator++;
+  if (mean_iterator >= 20) {
+    mean_iterator = 0;
+  }
+  distance = mean_sum / 20.0;
+
 #ifdef DEBUG_IR
   Serial.print("\t\t"); Serial.print(volts); Serial.print("V");
   Serial.print("\t B:"); Serial.print(dist_r);
   Serial.print(" -\t"); Serial.print(dist_l);
 #endif
 
-  return dist_r -  (dist_r - dist_l) * (volts - key_l / 2.0) / 0.5;
+  return distance;
 }
 
