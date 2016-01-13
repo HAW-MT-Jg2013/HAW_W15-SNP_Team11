@@ -20,8 +20,8 @@
 #define MOT1_B    6
 #define MOT2_A    9   // rechts
 #define MOT2_B    10
-#define MOT3_A    13  // unten
-#define MOT3_B    11
+#define MOT3_A    11  // unten
+#define MOT3_B    13
 
 #define IMU_SCL   2
 #define IMU_SDA   3
