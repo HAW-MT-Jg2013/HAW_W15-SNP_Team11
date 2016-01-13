@@ -66,6 +66,10 @@ main_st abschnitt = START;
 typedef enum treppe_st {GERADE1, KURVE1, GERADE2, KURVE2, GERADE3};
 treppe_st treppe_abschnitt = GERADE1;
 
+unsigned long wand_time = 0;
+int wand_status = 0;
+int wand_statusOld = 0;
+
 
 #include "functions.h"
 
@@ -176,7 +180,17 @@ void loop() {
 
         LED_BlinkMain(2);
 
-        if (0) { // if Treppe erkannt
+        if (abst_links < 180 && abst_links > 0) {
+          wand_status = 1;
+        } else {
+          wand_status = 0;
+        }
+        if (1 == wand_status && wand_status != wand_statusOld) {
+          wand_time = millis();
+        }
+        wand_statusOld = wand_status;
+
+        if ( (millis() - wand_time) > 5000 ) { // if Treppe erkannt
           abschnitt = TREPPE;
 #ifdef SERIAL
           Serial.println(" -- to state TREPPE -- ");
