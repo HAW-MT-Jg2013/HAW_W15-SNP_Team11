@@ -59,7 +59,7 @@ HC_SR04 US_L = HC_SR04(US_TRIG, US_ECHO);
 unsigned int abst_links = 0;
 unsigned int abst_vorne = 0;
 unsigned int hoehe = 0;
-int drehung = 0;
+float drehung_soll = 0;
 
 typedef enum main_st {START = 1, GERADEAUS, TREPPE, BARRIKADE, ABSTIEG, LANDUNG};
 main_st abschnitt = START;
@@ -69,6 +69,11 @@ treppe_st treppe_abschnitt = GERADE1;
 unsigned long wand_time = 0;
 int wand_status = 0;
 int wand_statusOld = 0;
+
+unsigned long some_time = 0;
+int some_status = 0;
+
+#define SCHUB  50
 
 
 #include "functions.h"
@@ -151,7 +156,9 @@ void loop() {
   Serial.print("\t"); Serial.print("IR2 "); Serial.print(hoehe);
   //Serial.print("\t"); Serial.print("MAG ");
   //Serial.print(c_magnetom_x); Serial.print (","); Serial.print(c_magnetom_y); Serial.print (","); Serial.print(c_magnetom_z);
-  //Serial.print("\t"); Serial.print("YAW "); Serial.print(yaw);
+  Serial.print("\t"); Serial.print("YAW "); Serial.print(yaw);
+
+  Serial.print("\t"); Serial.print("YAW "); Serial.print(drehung_soll);
   Serial.print("\n");
 #endif
 
@@ -174,9 +181,10 @@ void loop() {
       }
     case GERADEAUS:
       {
-        HeightControl(hoehe, 125);
-        HeadingControl(yaw, 0, 50);
-        //SideDistanceControl(abst_links, 150, 50);
+        HeightControl(hoehe, 130);
+
+        SideDistanceControl2(abst_links, &drehung_soll);
+        HeadingControl(yaw, drehung_soll, SCHUB);
 
         LED_BlinkMain(2);
 
@@ -190,7 +198,7 @@ void loop() {
         }
         wand_statusOld = wand_status;
 
-        if ( (millis() - wand_time) > 5000 ) { // if Treppe erkannt
+        if ( (millis() - wand_time) > 7000 ) { // if Treppe erkannt
           abschnitt = TREPPE;
 #ifdef SERIAL
           Serial.println(" -- to state TREPPE -- ");
@@ -206,13 +214,15 @@ void loop() {
         switch (treppe_abschnitt) {
           case GERADE1:
             {
-              SideDistanceControl(abst_links, 150, 75);
+              SideDistanceControl2(abst_links, &drehung_soll);
+              HeadingControl(yaw, drehung_soll, SCHUB);
 
               LED_StateStairs(1);
 
-              if (abst_vorne < 150) {
+              if (abst_vorne < 100 && hoehe > 80) {
                 treppe_abschnitt = KURVE1;
-                drehung = 0;
+                drehung_soll = yaw;
+                some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state KURVE1 -- ");
 #endif
@@ -221,13 +231,15 @@ void loop() {
             }
           case GERADE2:
             {
-              SideDistanceControl(abst_links, 150, 75);
+              SideDistanceControl2(abst_links, &drehung_soll);
+              HeadingControl(yaw, drehung_soll, SCHUB);
 
               LED_StateStairs(3);
 
-              if (abst_vorne < 150) {
+              if (abst_vorne < 100 && hoehe > 80) {
                 treppe_abschnitt = KURVE2;
-                drehung = 0;
+                drehung_soll = yaw;
+                some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state KURVE2 -- ");
 #endif
@@ -237,11 +249,33 @@ void loop() {
           case KURVE1:
             {
               // TODO 90° drehen
+              int stop_time = 1000;
+              int turn_time = 1000;
+
+              if (millis() - some_time > (turn_time + turn_time + 200 + 200)) {
+                Motor(0, 1);
+                Motor(0, 2);
+              } else if (millis() - some_time > (turn_time + turn_time + 200)) {
+                Motor(+50, 1); // links
+                Motor(-50, 2); // rechts
+              } else if (millis() - some_time > stop_time) {
+                Motor(+100, 1); // links
+                Motor(-100, 2); // rechts
+              } else if (millis() - some_time > 0) {
+                Motor(-200, 1);
+                Motor(-200, 2);
+              }
 
               LED_StateStairs(2);
 
-              if (drehung > 80) {
+              if (millis() - some_time > (stop_time + turn_time + 5000)) {
+                yaw = ToRad(90);
+              }
+
+              if (ToDeg(yaw) > (drehung_soll + 80)) {
                 treppe_abschnitt = GERADE2;
+                drehung_soll = drehung_soll + 90;
+                some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state GERADE2 -- ");
 #endif
@@ -251,11 +285,33 @@ void loop() {
           case KURVE2:
             {
               // TODO 90° drehen
+              int stop_time = 1000;
+              int turn_time = 1000;
+
+              if (millis() - some_time > (turn_time + turn_time + 200 + 200)) {
+                Motor(0, 1);
+                Motor(0, 2);
+              } else if (millis() - some_time > (turn_time + turn_time + 200)) {
+                Motor(+50, 1); // links
+                Motor(-50, 2); // rechts
+              } else if (millis() - some_time > stop_time) {
+                Motor(+100, 1); // links
+                Motor(-100, 2); // rechts
+              } else if (millis() - some_time > 0) {
+                Motor(-200, 1);
+                Motor(-200, 2);
+              }
 
               LED_StateStairs(4);
 
-              if (drehung > 80) {
+              if (millis() - some_time > (stop_time + turn_time + 5000)) {
+                yaw = ToRad(90);
+              }
+
+              if (yaw > (drehung_soll + 80)) {
                 treppe_abschnitt = GERADE3;
+                drehung_soll = drehung_soll + 90;
+                some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state GERADE3 -- ");
 #endif
@@ -264,12 +320,15 @@ void loop() {
             }
           case GERADE3:
             {
-              SideDistanceControl(abst_links, 150, 75);
+              SideDistanceControl2(abst_links, &drehung_soll);
+              HeadingControl(yaw, drehung_soll, SCHUB);
 
               LED_StateStairs(5);
 
               if (abst_links == 0) {
                 abschnitt = BARRIKADE;
+                drehung_soll = yaw;
+                some_time = millis();
 #ifdef SERIAL
                 Serial.println(" -- to state BARRIKADE -- ");
 #endif
@@ -286,7 +345,8 @@ void loop() {
     case BARRIKADE:
       {
         // Höhe leicht erhöhen
-        HeightControl(hoehe, 120);
+        HeightControl(hoehe, 180);
+        HeadingControl(yaw, drehung_soll, SCHUB);
 
         LED_BlinkMain(4);
 
@@ -301,6 +361,9 @@ void loop() {
     case ABSTIEG:
       {
         // TODO mit Motor nach unten fliegen
+        Motor(-100, 3);
+        Motor(0, 1);
+        Motor(0, 2);
 
         LED_BlinkMain(5);
 
@@ -315,6 +378,9 @@ void loop() {
     case LANDUNG:
       {
         // TODO sanfte Landung
+        Motor(0, 3);
+        Motor(0, 1);
+        Motor(0, 2);
 
         LED_BlinkMain(6);
 

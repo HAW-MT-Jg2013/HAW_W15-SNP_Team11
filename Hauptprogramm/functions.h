@@ -25,11 +25,13 @@ int Y_Doutput = 0;
 
 // Parameter Regler Seitenabstand
 unsigned long S_Ilasttime = millis();
-int S_Iinterval = 10;
+int S_Iinterval = 1000;
 long S_Isum = 0;
 #define S_Imax 1000
-#define S_Ki 1
+#define S_Ki 0
 #define S_Kp 1
+
+#define S_SOLL 150
 
 
 // LED status blink
@@ -138,9 +140,12 @@ void HeadingControl(float actual, float desired, int baseThrust) {
   Motor(baseThrust + delta, 2);
 }
 
-void SideDistanceControl(int actual, int desired, int baseThrust) {
-  int diff = desired - actual;
+void SideDistanceControl2(int actual, float* drehung_soll) {
+  int diff = S_SOLL - actual;
 
+  float delta = 0;
+
+  /*
   if ( (millis() - S_Ilasttime) > S_Iinterval ) {
     S_Ilasttime = millis();
 
@@ -152,10 +157,23 @@ void SideDistanceControl(int actual, int desired, int baseThrust) {
     }
   }
 
-  int delta = (diff * S_Kp) + (S_Ki * S_Isum / S_Iinterval);
+  delta = (diff * S_Kp) + (S_Ki * S_Isum / S_Iinterval);
+  */
 
-  Motor(baseThrust + delta, 1);
-  Motor(baseThrust - delta, 2);
+  if (actual < 110 && actual != 0) {
+    delta = 0.01 * 0.01745329252; // radiant
+  } else if (actual > 190) {
+    delta = -0.01 * 0.01745329252; // radiant
+  }
+
+  float return_val = *drehung_soll + delta;
+  if (return_val > PI) {
+    return_val = return_val - (2 * PI);
+  } else if (return_val < -PI) {
+    return_val = return_val + (2 * PI);
+  }
+
+  *drehung_soll = return_val;
 }
 
 
