@@ -179,7 +179,7 @@ void LED_BlinkMain(int blinkAnzahl) {
 void LED_StateStairs(int blinkAnzahl) {
   if (LED2_counter < blinkAnzahl * 2) {
     if ((millis() - LED2_lasttime1) > 150) {
-      digitalWrite(LED_R1, !digitalRead(LED_R2));
+      digitalWrite(LED_R2, !digitalRead(LED_R2));
       LED2_lasttime1 = millis();
       LED2_counter++;
     }

@@ -162,7 +162,8 @@ void loop() {
         if (hoehe > 50) {
           abschnitt = GERADEAUS;
           digitalWrite(LED_GR, LOW);
-#ifdef SERIAL Serial.println(" -- to state GERADEAUS -- ");
+#ifdef SERIAL
+          Serial.println(" -- to state GERADEAUS -- ");
 #endif
         }
         break;
@@ -177,7 +178,8 @@ void loop() {
 
         if (0) { // if Treppe erkannt
           abschnitt = TREPPE;
-#ifdef SERIAL Serial.println(" -- to state TREPPE -- ");
+#ifdef SERIAL
+          Serial.println(" -- to state TREPPE -- ");
 #endif
         }
         break;
@@ -199,12 +201,14 @@ void loop() {
               if (treppe_abschnitt == GERADE1 && abst_vorne < 150) {
                 treppe_abschnitt = KURVE1;
                 drehung = 0;
-#ifdef SERIAL Serial.println(" -- to state KURVE1 -- ");
+#ifdef SERIAL
+                Serial.println(" -- to state KURVE1 -- ");
 #endif
               } else if (treppe_abschnitt == GERADE2 && abst_vorne < 150) {
                 treppe_abschnitt = KURVE2;
                 drehung = 0;
-#ifdef SERIAL Serial.println(" -- to state KURVE2 -- ");
+#ifdef SERIAL
+                Serial.println(" -- to state KURVE2 -- ");
 #endif
               }
               break;
@@ -224,7 +228,8 @@ void loop() {
 #endif
               } else if (treppe_abschnitt == KURVE2 && drehung > 80) {
                 treppe_abschnitt = GERADE3;
-#ifdef SERIAL Serial.println(" -- to state GERADE3 -- ");
+#ifdef SERIAL
+                Serial.println(" -- to state GERADE3 -- ");
 #endif
               }
               break;
@@ -237,7 +242,8 @@ void loop() {
 
               if (abst_links == 0) {
                 abschnitt = BARRIKADE;
-#ifdef SERIAL Serial.println(" -- to state BARRIKADE -- ");
+#ifdef SERIAL
+                Serial.println(" -- to state BARRIKADE -- ");
 #endif
               }
 
@@ -258,7 +264,8 @@ void loop() {
 
         if (hoehe > 140) { // Höhe sehr groß - über Abgrund TODO
           abschnitt = ABSTIEG;
-#ifdef SERIAL Serial.println(" -- to state ABSTIEG -- ");
+#ifdef SERIAL
+          Serial.println(" -- to state ABSTIEG -- ");
 #endif
         }
         break;
@@ -271,7 +278,8 @@ void loop() {
 
         if (hoehe < 100) {
           abschnitt = LANDUNG;
-#ifdef SERIAL Serial.println(" -- to state LANDUNG -- ");
+#ifdef SERIAL
+          Serial.println(" -- to state LANDUNG -- ");
 #endif
         }
         break;
