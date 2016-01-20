@@ -158,7 +158,7 @@ void loop() {
   //Serial.print(c_magnetom_x); Serial.print (","); Serial.print(c_magnetom_y); Serial.print (","); Serial.print(c_magnetom_z);
   Serial.print("\t"); Serial.print("YAW "); Serial.print(yaw);
 
-  Serial.print("\t"); Serial.print("YAW "); Serial.print(drehung_soll);
+  Serial.print("\t"); Serial.print("SOLL "); Serial.print(drehung_soll);
   Serial.print("\n");
 #endif
 
@@ -196,7 +196,7 @@ void loop() {
         }
         wand_statusOld = wand_status;
 
-        if ( (millis() - wand_time) > 7000 ) { // if Treppe erkannt
+        if ( (millis() - wand_time) > 10000 ) { // if Treppe erkannt
           abschnitt = TREPPE;
 #ifdef SERIAL
           Serial.println(" -- to state TREPPE -- ");
@@ -206,7 +206,7 @@ void loop() {
       }
     case TREPPE:
       {
-        HeightControl(hoehe, 150);
+        HeightControl(hoehe, 170);
 
         LED_BlinkMain(3);
         switch (treppe_abschnitt) {
@@ -303,10 +303,6 @@ void loop() {
               LED_StateStairs(4);
 
               if (millis() - some_time > (stop_time + turn_time + 5000)) {
-                yaw = correctRad(drehung_soll +ToRad(90));
-              }
-
-              if (yaw > (drehung_soll + 80)) {
                 treppe_abschnitt = GERADE3;
                 drehung_soll = correctRad(drehung_soll + ToRad(90));
                 some_time = millis();

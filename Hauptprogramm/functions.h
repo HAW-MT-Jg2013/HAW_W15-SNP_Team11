@@ -173,9 +173,9 @@ void SideDistanceControl2(int actual, float* drehung_soll) {
   */
 
   if (actual < 110 && actual != 0) {
-    delta = 0.05 * 0.01745329252; // radiant
+    delta = 0.02 * 0.01745329252; // radiant
   } else if (actual > 190) {
-    delta = -0.05 * 0.01745329252; // radiant
+    delta = -0.02 * 0.01745329252; // radiant
   }
 
   float return_val = *drehung_soll + delta;
